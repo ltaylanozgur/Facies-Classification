@@ -1,6 +1,6 @@
 # Facies-Classification
 
-<img src="images/image1.png"/>
+<img src="Facies.png"/>
 
 L.T. Ozgur Yildirim
 
