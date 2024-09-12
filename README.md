@@ -28,4 +28,4 @@ Gas production in the Panoma Field is from carbonate reservoirs deposited in a p
 
 <a id='section3'></a>
 ### License
-This project is my final project for EME 597-004 Data Analytics for Earth and Energy Systems course given in Energy and Mineral Engineering Department of the Penn State University. This is an educational project; therefore, all materials are free to be used.
+This project is my final project for EME 597-004 Data Analytics for Earth and Energy Systems course (Fall 2023 semester) given in Energy and Mineral Engineering Department of the Penn State University. This is an educational project; therefore, all materials are free to be used.
