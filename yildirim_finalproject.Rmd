@@ -1,0 +1,1442 @@
+---
+title: "yildirim_finalproject"
+author: "Ozgur Yildirim"
+date: "2023-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Volumes/OZGUR/3-The Pennsylvania State University/PhD/1-Courses/2-Fall 2023/2 - EME 597-004 Data Analytics/Final_project') 
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+# WHEN I KNIT THE DOCUMENT, THE RESULTS CHANGED IN THE HTML FILE. I PRESENTED AND DISCUSSED THE RESULTS FROM THE RMD FILE, NOT THE KNITTED HTML FILE.
+```
+
+```{r}
+# Load dplyr library
+library(dplyr)
+```
+
+```{r}
+# Import the facies_classification.csv file and store to data variable.
+data <- read.csv('facies_classification.csv')
+```
+
+```{r}
+#------------------------------------------- DATA MANIPULATION -------------------------------------------------
+```
+
+```{r}
+# Names of columns in dataset
+names(data)
+```
+
+```{r}
+# Convert column names to lowercase
+colnames(data) <- tolower(colnames(data))
+
+print(colnames(data))
+```
+
+```{r}
+# Quantitative variables
+numeric_variables <- colnames(data)[sapply(data, is.numeric)]
+print(numeric_variables)
+```
+
+```{r}
+# Qualitative variables
+categorical_variables <- colnames(data)[sapply(data, function(x) is.factor(x) || is.character(x))]
+print(categorical_variables)
+```
+
+```{r}
+# Summary
+summary(data)
+```
+
+```{r}
+# Load corrplot library
+library(corrplot)
+```
+
+```{r}
+# Check number of missing values for each column.
+missing_values_per_column <- colSums(is.na(data))
+print(missing_values_per_column)
+```
+
+```{r}
+# Remove rows with missing values
+data_na <- na.omit(data)
+```
+
+```{r}
+# Total count of missing values in pe variable
+sum(is.na(data_na$pe))
+```
+
+```{r}
+# Total count of missing values in pe variable
+sum(is.na(data_na))
+```
+
+```{r}
+# Check number of missing values for each column.
+missing_values_per_column <- colSums(is.na(data_na))
+print(missing_values_per_column)
+```
+
+```{r}
+#Summary
+summary(data_na)
+```
+
+```{r}
+# Convert facies column to categorical variable
+data_na$facies <- as.factor(data_na$facies)
+```
+
+```{r}
+# Qualitative variables
+categorical_variables <- colnames(data_na)[sapply(data_na, function(x) is.factor(x) || is.character(x))]
+print(categorical_variables)
+```
+
+```{r}
+# Quantitative variables
+numeric_variables <- colnames(data_na)[sapply(data_na, is.numeric)]
+print(numeric_variables)
+```
+
+```{r}
+# install.packages("forcats")
+# Load forcats library
+library(forcats)
+```
+
+```{r}
+# Update the names of facies categories
+data_na$facies <- fct_recode(data_na$facies,
+                                  "Nonmarine sandstone" = "1",
+                                  "Nonmarine coarse siltstone" = "2",
+                                  "Nonmarine fine siltstone" = "3",
+                                  "Marine siltstone and shale" = "4",
+                                  "Mudstone (limestone)" = "5",
+                                  "Wackestone" = "6",
+                                  "Dolomite" = "7",
+                                  "Packstone-grainstone" = "8",
+                                  "Phylloid-algal bafflestone" = "9")
+```
+
+```{r}
+# Create a new column of facies categories (4 different facies categories)
+facies_categorization <- function(facies) {
+  if (facies %in% c("Mudstone (limestone)", "Wackestone", "Dolomite", "Packstone-grainstone", "Phylloid-algal bafflestone")) {
+    return("Carbonates")
+  } else if (facies %in% c("Nonmarine sandstone")) {
+    return("Nonmarine sandstone")
+  } else if (facies %in% c("Nonmarine coarse siltstone", "Nonmarine fine siltstone")) {
+    return("Nonmarine siltstone") 
+  } else if (facies %in% c("Marine siltstone and shale")) {
+    return("Marine mudstone")
+  } else {
+    return(NULL)
+  }
+}
+```
+
+```{r}
+# Apply facies_categorization function to facies column
+data_na$f_carb_sstn_silt_mud <- sapply(data_na$facies, facies_categorization)
+```
+
+```{r}
+# Create a new column of facies categories (Clastics and Carbonates)
+facies_categorization_2 <- function(f_carb_sstn_silt_mud) {
+  if (f_carb_sstn_silt_mud %in% c("Nonmarine sandstone", "Nonmarine siltstone", "Marine mudstone")) {
+    return("0") # Clastics
+  } 
+  else if (f_carb_sstn_silt_mud %in% c("Carbonates")) {
+    return("1") # Carbonate
+  }
+}
+```
+
+```{r}
+# Apply facies_categorization_2 function to f_carb_sstn_silt_mud column
+data_na$f_clastic_carb <- sapply(data_na$f_carb_sstn_silt_mud, facies_categorization_2)
+```
+
+```{r}
+# Convert f_clastic_carb column to categorical variable
+data_na$f_clastic_carb <- as.factor(data_na$f_clastic_carb)
+```
+
+```{r}
+# Data type of the variable f_clastic_carb
+class(data_na$f_clastic_carb)
+```
+
+```{r}
+# Quantitative variables
+numeric_variables <- colnames(data_na)[sapply(data_na, is.numeric)]
+print(numeric_variables)
+```
+
+```{r}
+# Qualitative variables
+categorical_variables <- colnames(data_na)[sapply(data_na, function(x) is.factor(x) || is.character(x))]
+print(categorical_variables)
+```
+
+```{r}
+# New Dataset
+facies_class <- data_na %>% select(f_clastic_carb, f_carb_sstn_silt_mud, facies, formation, well.name, depth, gr, ild_log10, deltaphi, phind, pe, nm_m, relpos)
+```
+
+```{r}
+# Categorical variables
+categorical_variables <- colnames(facies_class)[sapply(facies_class, function(x) is.factor(x) || is.character(x))]
+print(categorical_variables)
+```
+
+```{r}
+# Quantitative variables
+numeric_variables <- colnames(facies_class)[sapply(facies_class, is.numeric)]
+print(numeric_variables)
+```
+
+```{r}
+# Summary
+summary(facies_class)
+```
+```{r}
+#-------------------------------------------- DATA VISUALIZATION -------------------------------------------------
+```
+
+```{r}
+# Load corrplot library
+library(corrplot)
+```
+
+```{r}
+# Plot the correlations of all the quantitative variables. 
+facies_class_quant <- Filter(is.numeric, facies_class) # dataset with just quantitative variables
+correlation_matrix <- cor(facies_class_quant)
+corrplot(correlation_matrix, method = 'color', order = 'alphabet')
+
+# Blue colors represent positive correlation with correlation coefficients between 0 and 1. Brown colors represent negative correlation with correlation coefficients between -1 and 0. The relatively dark blue squares indicate higher positive correlation between variables such as photoelectric index vs. nonmarine marine indicator, resistivity vs. nonmarine marine indicator, or resistivity vs. photoelectric index. The dark brown squares indicate negative correlation between variables such as average porosity vs. photoelectric index, average porosity vs. nonmarine marine indicator, and average porosity vs. resistivity. The zero (or close to zero) correlation coefficient indicates no correlation between variables such as relative position vs. average porosity.
+```
+
+```{r}
+# Blue colors represent positive correlation with correlation coefficients between 0 and 1. Brown colors represent negative correlation with correlation coefficients between -1 and 0. The relatively dark blue squares indicate higher positive correlation between variables such as photoelectric index vs. nonmarine marine indicator, resistivity vs. nonmarine marine indicator, or resistivity vs. photoelectric index. The dark brown squares indicate negative correlation between variables such as average porosity vs. photoelectric factor, average porosity vs. nonmarine marine indicator, and average porosity vs. resistivity. The zero (or close to zero) correlation coefficient indicates no correlation between variables such as relative position vs. average porosity.
+corrplot.mixed(correlation_matrix, lower = 'circle', upper = 'number', order = 'hclust')
+```
+
+```{r}
+# Produce a scatter plot matrix of the quantitative variables.
+pairs(facies_class[,6:13]) 
+```
+
+```{r}
+# Load library ggplot2
+library(ggplot2)
+```
+
+```{r}
+# Bar plot of f_carb_sstn_silt_mud variable: The majority of the facies are carbonates and nonmarine siltstone facies.
+ggplot(facies_class) + geom_bar(aes(x = f_carb_sstn_silt_mud), fill = c('#a6cee3', '#1f78b4', '#b2df8a', 'brown'))+
+  ylab('Count') + xlab('Facies Class') + 
+  ggtitle('Facies Class') + theme_light() 
+```
+```{r}
+# Bar plot of f_clastic_carb variable shows that Clastics are more penetrated than Carbonates through drilling of nine wells.
+# 0 is Clastics. 1 is Carbonates.
+ggplot(facies_class) + geom_bar(aes(x = f_clastic_carb), fill = c('#b2df8a', 'brown')) +
+  ylab('Count') + xlab('Facies Class') + 
+  ggtitle('Facies Class') + theme_light() +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+# Scatter plot of Gamma Ray vs. Neutron-Density Porosity Difference. 
+# There is no positive or negative correlation between Gamma Ray and Neutron-Density Porosity Difference.
+ggplot(facies_class) + geom_point(aes(x = gr, y = deltaphi), 
+                          color = 'blue', size = 2, alpha = 0.5) +
+  ylab('Neutron-Density Porosity Difference (%)') + xlab('Gamma ray (API)') + 
+  ggtitle('Gamma Ray vs. Neutron-Density Porosity Difference') + theme_light() +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+# Scatter plot of Gamma Ray vs. Average Density-Neutron Porosity. 
+# There is no positive or negative correlation between Gamma Ray and Average Neutron-Density Porosity.
+ggplot(facies_class) + geom_point(aes(x = gr, y = phind), 
+                          color = 'green', size = 2, alpha = 0.5) +
+  ylab('Average Density-Neutron Porosity (%)') + xlab('Gamma ray (API)') + 
+  ggtitle('Gamma Ray vs. Average Density-Neutron Porosity') + theme_light() +
+  theme(text = element_text(size = 15))
+```
+
+
+```{r}
+# Histogram of Photoelectric Index shows that the majority of the values for photoelectric index are between 3.1 and 3.5. 
+ggplot(facies_class) + geom_histogram(aes(x = pe), bins = 20, 
+                              color = 'black', fill = 'lightblue') +
+  ylab('Count') + xlab('Photoelectric Index') + 
+  ggtitle('Histogram of Photoelectric Index') +
+  theme(text = element_text(size = 15))
+
+```
+
+
+```{r}
+# Histogram of Gamma Ray shows that the majority of the values for gamma ray is around 75 API. 
+ggplot(facies_class) + geom_histogram(aes(x = gr), bins = 20, 
+                              color = 'black', fill = 'darkgreen') +
+  ylab('Count') + xlab('Gamma Ray (API)') + 
+  ggtitle('Histogram of Gamma Ray') +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+# Box plot showing the distribution of gamma ray values within each facies in f_carb_sstn_silt_mud variable, including the median, quartiles, and any potential outliers. Marine mudstones exhibit higher gamma ray values whereas carbonates show lower gamma ray values. These two facies show right tailed distribution of gamma ray values. 
+ggplot(facies_class) + geom_boxplot(aes(x = f_carb_sstn_silt_mud, y = gr)) +
+  ylab('Gamma Ray (API)') + xlab('Facies') + 
+  ggtitle('Boxplot of Gamma Ray vs. Facies') +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+# Box plot showing the distribution of gamma ray values within each facies in f_clastic_carb variable, including the median, quartiles, and any potential outliers. Clastics exhibit relatively high gamma ray values than carbonates.
+# 0 is Clastics. 1 is Carbonates.
+ggplot(facies_class) + geom_boxplot(aes(x = f_clastic_carb, y = gr)) +
+  ylab('Gamma Ray (API)') + xlab('Facies') + 
+  ggtitle('Boxplot of Gamma Ray vs. Facies') +
+  theme(text = element_text(size = 15))
+```
+
+```{r}
+# Violin plot showing the distribution of average density-neutron porosity values within each facies (f_carb_sstn_silt_mud). The lowest average porosity is observed in carbanates. Nonmarine sandstones exhibit the highest average porosity values.
+ggplot(facies_class) + geom_violin(aes(x = f_carb_sstn_silt_mud, y = phind), 
+                           fill = 'lightblue') +
+  theme(panel.grid.major.x = element_blank()) +
+  ylab('Average Density-Neutron Porosity (%)') + xlab('Facies') + 
+  ggtitle('Violin plot of Average Density-Neutron Porosity vs. Facies')
+```
+```{r}
+# Violin plot showing the distribution of average density-neutron porosity values within each facies (f_clastic_carb). Clastics exhibit relatively high porosity than carbonates.
+# 0 is Clastics. 1 is Carbonates.
+ggplot(facies_class) + geom_violin(aes(x = f_clastic_carb, y = phind), 
+                           fill = 'lightblue') +
+  theme(panel.grid.major.x = element_blank()) +
+  ylab('Average Density-Neutron Porosity (%)') + xlab('Facies') + 
+  ggtitle('Violin plot of Average Density-Neutron Porosity vs. Facies')
+```
+
+```{r}
+# Violin plot showing the distribution of resistivity within each facies (f_carb_sstn_silt_mud). Resistivity values are higher in carbonates and marine mudstones.
+ggplot(facies_class) + geom_violin(aes(x = f_carb_sstn_silt_mud, y = ild_log10), 
+                           fill = 'brown') +
+  theme(panel.grid.major.x = element_blank()) +
+  ylab('Resistivity(ohm.m)') + xlab('Facies') + 
+  ggtitle('Violin plot of Resistivity vs. Facies')
+```
+```{r}
+# Violin plot showing the distribution of resistivity within each facies (f_clastic_carb). Resistivity values are higher in carbonates than clastics.
+# 0 is Clastics. 1 is Carbonates.
+ggplot(facies_class) + geom_violin(aes(x = f_clastic_carb, y = ild_log10), 
+                           fill = 'brown') +
+  theme(panel.grid.major.x = element_blank()) +
+  ylab('Resistivity(ohm.m)') + xlab('Facies') + 
+  ggtitle('Violin plot of Resistivity vs. Facies')
+```
+
+```{r}
+# The plot below shows that the lowest average porosity and gamma ray values are observed in carbonates. Marine mudstones show relatively high gamma ray values.
+ggplot(facies_class) + geom_point(aes(x = gr, y = phind, color = f_carb_sstn_silt_mud, size = ild_log10), alpha = 0.5) +
+  scale_color_discrete(name = 'Facies', labels = c('Carbonates','Marine mudstone', 'Nonmarine sandstone', 'Nonmarine siltstone')) + scale_size_continuous(name = 'Resistivity') +
+  ylab('Average Density-Neutron Porosity (%)') + xlab('Gamma Ray (API)') + 
+  ggtitle('Average Density-Neutron Porosity vs. Gamma Ray')
+```
+```{r}
+# The plot below shows that the lowest average porosity and gamma ray values are observed in carbonates. Clastics show relatively high gamma ray values while carbonates show higher resistivity.
+ggplot(facies_class) + geom_point(aes(x = gr, y = phind, color = f_clastic_carb, size = ild_log10), alpha = 0.5) +
+  scale_color_discrete(name = 'Facies', labels = c('Clastics','Carbonates')) + scale_size_continuous(name = 'Resistivity') +
+  ylab('Average Density-Neutron Porosity (%)') + xlab('Gamma Ray (API)') + 
+  ggtitle('Average Density-Neutron Porosity vs. Gamma Ray')
+```
+
+```{r}
+#-------------------------------------------- MODELS ---------------------------------------------------
+```
+
+```{r}
+# I performed 4-fold cross validation for CART, GAM, MARS, and BAGGING models to classify the clastics and carbonates facies.
+```
+
+```{r}
+# Nonmarine marine indicator (nm_m) is not needed for the models as we have facies categories. Relpos is not needed for the models since we use wireline log measurements and depth as predictors.
+facies_class <- facies_class %>% select(f_clastic_carb, depth, gr, ild_log10, deltaphi, phind, pe)
+```
+
+```{r}
+#-------------------------------------------- 1. GAM MODEL ---------------------------------------------------
+```
+
+```{r, message=FALSE}
+# Load gam, earth, tidymodels, and caret libraries.
+library(gam)
+library(earth)
+library(tidymodels)
+library(caret)
+```
+
+```{r}
+# Split the data in facies_class dataset into a training set (80%) and a test set (20%) for modeling purposes.
+sample_rows <- sample(length(facies_class[,2]), 
+                      size = 0.8*length(facies_class[,2]),
+                      replace = FALSE) 
+
+trainingdata <- facies_class[sample_rows,] # 80% training set 
+testdata <- facies_class[-sample_rows,] # 20% test set 
+```
+
+```{r}
+# Using step.Gam, fit a GAM model that tests whether each predictor should be included linearly and/or as a spline. The direction is set to “both”.
+
+gam_mod <- gam(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe,  family = 'binomial', data = trainingdata) # baseline model
+
+# use the scope parameter to list possible options
+gam_step <- step.Gam(gam_mod, scope = list(
+  "depth" =~ 1 + depth + s(depth, 2) + s(depth, 3) + s(depth, 5) + lo(depth),
+  "gr" =~ 1 + gr + s(gr, 2) + s(gr, 5),
+  "ild_log10" =~ 1 + ild_log10 + s(ild_log10, 2) + s(ild_log10) + s(ild_log10, 6) + lo(ild_log10),
+  "deltaphi" =~ 1 + deltaphi + s(deltaphi, 2) + s(deltaphi, 10),
+  "phind" =~ 1 + phind + s(phind, 2),
+  "pe" =~ 1 + pe + s(pe, 2) + s(pe, 10)), 
+  direction = "both")
+
+# The output below shows that "f_clastic_carb ~ s(depth, 2) + s(gr, 5) + s(ild_log10, 6) + deltaphi + pe" is the best model based on the lowest AIC value = 1363.33. 
+
+# deltaphi and pe should be included linearly. depth, gr, and ild_log10 should be included as a spline with 2, 5, and 6 degrees of freedom, respectively. The phind should not be included.
+```
+
+```{r}
+summary(gam_mod)
+
+# The p-values associated with F statistic, Pr(>F), are very low (< 0.005) for all predictors. This indicates that the predictor variables depth, gr, ild_log10, deltaphi, phind, pe have significant effect on the response variable (f_clastic_carb).
+```
+
+```{r}
+# I performed 5-fold cross validation for GAM model from step.gam to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the GAM model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Train and test the GAM model from step.gam to predict the facies using 5-fold cross validation.
+
+# defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_gam <- data[folds == i, ] # test set
+    training_set_gam <- data[folds != i, ] # training set
+    
+    # Train the gam model using the training set
+    gam_model <- gam(f_clastic_carb ~ s(depth, 2) + s(gr, 5) + s(ild_log10, 6) + deltaphi + pe,  family = 'binomial', data = training_set_gam)
+
+    # Predict using the predictors in the test set
+    predicted_data <- predict(gam_model, newdata = test_set_gam, type = "response")
+    
+    # Convert predicted probabilities to binary predictions
+    binary_predictions <- ifelse(predicted_data > 0.5, 1, 0)
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_gam$f_clastic_carb, Predicted = binary_predictions)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+    return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "GAM MODEL Final Confusion Matrix",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_gam <- (TP + TN) / sum(final_confusion_matrix)
+precision_gam <- TP/(FP+TP)
+sensitivity_gam <- TP/(TP + FN)
+specificity_gam <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("GAM MODEL PERFORMANCE METRICS:", "\n")
+cat("GAM MODEL ACCURACY:", round(accuracy_gam,4), "\n")
+cat("GAM MODEL PRECISION:", round(precision_gam,4), "\n")
+cat("GAM MODEL SENSITIVITY:", round(sensitivity_gam,4), "\n")
+cat("GAM MODEL SPECIFICITY:", round(specificity_gam,4), "\n")
+```
+
+```{r}
+#-------------------------------------------- 2. MARS MODEL ---------------------------------------------------
+```
+
+```{r}
+# I performed 5-fold cross validation for MARS model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the MARS model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_mars <- data[folds == i, ] # test set
+    training_set_mars <- data[folds != i, ] # training set
+    
+    # Train the mars model using the training set
+    mars_model <- earth(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe, data = training_set_mars)
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(mars_model, newdata = test_set_mars, type = "response")
+    
+    # Convert predicted probabilities to binary predictions
+    binary_predictions <- ifelse(predicted_data > 0.5, 1, 0)
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_mars$f_clastic_carb, Predicted = binary_predictions)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "MARS MODEL Final Confusion Matrix",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_mars <- (TP + TN) / sum(final_confusion_matrix)
+precision_mars <- TP/(FP+TP)
+sensitivity_mars <- TP/(TP + FN)
+specificity_mars <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("MARS MODEL PERFORMANCE METRICS:", "\n")
+cat("MARS MODEL ACCURACY:", round(accuracy_mars,4), "\n")
+cat("MARS MODEL PRECISION:", round(precision_mars,4), "\n")
+cat("MARS MODEL SENSITIVITY:", round(sensitivity_mars,4), "\n")
+cat("MARS MODEL SPECIFICITY:", round(specificity_mars,4), "\n")
+```
+
+```{r}
+#-------------------------------------------- 3. CART MODEL ---------------------------------------------------
+```
+
+```{r, message=FALSE}
+# Load rpart and rpart.pot libraries
+library(rpart)
+library(rpart.plot)
+```
+
+```{r}
+# I performed 5-fold cross validation for CART model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the CART model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_cart <- data[folds == i, ] # test set
+    training_set_cart <- data[folds != i, ] # training set
+    
+    # Train the CART model using the training set
+    cart_model <- rpart(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe, data = training_set_cart, method = "class")
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(cart_model, newdata = test_set_cart, type = "class")
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_cart$f_clastic_carb, Predicted = predicted_data)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "CART MODEL Final Confusion Matrix",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_cart <- (TP + TN) / sum(final_confusion_matrix)
+precision_cart <- TP/(FP+TP)
+sensitivity_cart <- TP/(TP + FN)
+specificity_cart <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("CART MODEL PERFORMANCE METRICS:", "\n")
+cat("CART MODEL ACCURACY:", round(accuracy_cart,4), "\n")
+cat("CART MODEL PRECISION:", round(precision_cart,4), "\n")
+cat("CART MODEL SENSITIVITY:", round(sensitivity_cart,4), "\n")
+cat("CART MODEL SPECIFICITY:", round(specificity_cart,4), "\n")
+```
+
+```{r}
+#----------------------------------------- 4. Bootstrap Aggregating (Bagging)-------------------------------------
+```
+
+```{r, message=FALSE}
+library(lubridate)
+library(ggplot2)
+
+library(rpart)        # for CART
+library(ipred)        # for bagging
+
+library(gbm)          # for regular boosting
+library(xgboost)      # specialized version of boosting: extreme gradient boosting
+library(tidymodels)
+
+library(leaps)        # variable selection
+library(caret)        # variable selection
+library(VSURF)        # variable selection
+```
+
+```{r}
+# I performed 5-fold cross validation for BAGGING model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the BAGGING model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+
+# Confusion matrix and performance metrics of BAGGING model slightly changes at each run although cross validation is performed.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_bagging <- data[folds == i, ] # test set
+    training_set_bagging <- data[folds != i, ] # training set
+    
+    # Train the bagging model using the training set
+    bagging_model <- bagging(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe, 
+                             data = training_set_bagging, nbagg = 100, coob = TRUE)
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(bagging_model, newdata = test_set_bagging, type = "class")
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_bagging$f_clastic_carb, Predicted = predicted_data)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "BAGGING MODEL Final Confusion Matrix",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_bagging <- (TP + TN) / sum(final_confusion_matrix)
+precision_bagging <- TP/(FP+TP)
+sensitivity_bagging <- TP/(TP + FN)
+specificity_bagging <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("BAGGING MODEL PERFORMANCE METRICS:", "\n")
+cat("BAGGING MODEL ACCURACY:", round(accuracy_bagging,4), "\n")
+cat("BAGGING MODEL PRECISION:", round(precision_bagging,4), "\n")
+cat("BAGGING MODEL SENSITIVITY:", round(sensitivity_bagging,4), "\n")
+cat("BAGGING MODEL SPECIFICITY:", round(specificity_bagging,4), "\n")
+
+# Confusion matrix and performance metrics of BAGGING model slightly changes at each run and also when knitting the document although cross validation is performed. The evaluation is done based on the following performance metrics of the BAGGING model.
+# Accuracy: 0.879	Precision: 0.8726	Sensitivity: 0.8576	Specificity: 0.8967
+```
+
+```{r}
+#----------------------------------------- 5. Random Forest Classifier ------------------------------------------
+```
+
+```{r, message=FALSE}
+library(devtools)
+library(tibble)
+library(ggplot2)
+library(tidyr)
+
+library(randomForest)
+library(rJava)       # requirement for BART option 1
+library(bartMachine) # BART option 1
+library(dbarts)       # BART option 2
+```
+
+```{r}
+# I performed 5-fold cross validation for Random Forest Classifier model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the Random Forest Classifier model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_rf <- data[folds == i, ] # test set
+    training_set_rf <- data[folds != i, ] # training set
+    
+    # Train the random forest model using the training set
+    rf_model <- randomForest(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe, 
+                       data = training_set_rf, ntree = 1000, 
+                       mtry = 3, nodesize = 10,
+                       importance = TRUE)
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(rf_model, newdata = test_set_rf, type = "class")
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_rf$f_clastic_carb, Predicted = predicted_data)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "RANDOM FOREST CLASSIFIER MODEL Final Confusion Matrix",
+       x = "Predicted",
+       y = "Actual") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_rf <- (TP + TN) / sum(final_confusion_matrix)
+precision_rf <- TP/(FP+TP)
+sensitivity_rf <- TP/(TP + FN)
+specificity_rf <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("RANDOM FOREST CLASSIFIER MODEL PERFORMANCE METRICS:", "\n")
+cat("RANDOM FOREST CLASSIFIER MODEL ACCURACY:", round(accuracy_rf,4), "\n")
+cat("RANDOM FOREST CLASSIFIER MODEL PRECISION:", round(precision_rf,4), "\n")
+cat("RANDOM FOREST CLASSIFIER MODEL SENSITIVITY:", round(sensitivity_rf,4), "\n")
+cat("RANDOM FOREST CLASSIFIER MODEL SPECIFICITY:", round(specificity_rf,4), "\n")
+
+# Confusion matrix and performance metrics of RANDOM FOREST CLASSIFIER model slightly changes at each run and also when knitting the document although cross validation is performed. The evaluation is done based on the following performance metrics of the RANDOM FOREST CLASSIFIER model.
+# Accuracy: 0.884	Precision: 0.8844	Sensitivity: 0.8587	Specificity: 0.9053
+```
+```{r}
+#-------------------------------- 6. Bayesian Adaptive Regression Trees (BART) -------------------------------
+```
+
+```{r}
+# I performed 5-fold cross validation for BART model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the BART model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_bart <- data[folds == i, ] # test set
+    training_set_bart <- data[folds != i, ] # training set
+    
+    # Train the bart model using the training set
+    bart_model <- bartMachine(X = training_set_bart[,1:6],
+                           y = training_set_bart[,7])
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(bart_model, new_data = test_set_bart[,1:6], type = "class")
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_bart$f_clastic_carb, Predicted = predicted_data)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+rownames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+colnames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Predicted, y = Actual, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "BART MODEL Final Confusion Matrix",
+       x = "Actual",
+       y = "Predicted") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in columns
+# final_confusion_matrix <- final_confusion_matrix[,c(2, 1)] 
+
+# Label the confusion matrix
+# rownames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+# colnames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# The order of the cells in printed matrix and the one that is created by ggplot are not same. Therefore, the location of TP, TN, FP, and FN is updated.
+print(final_confusion_matrix)
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[1, 1]
+TN <- final_confusion_matrix[2, 2]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_bart <- (TP + TN) / sum(final_confusion_matrix)
+precision_bart <- TP/(FP+TP)
+sensitivity_bart <- TP/(TP + FN)
+specificity_bart <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("BART MODEL PERFORMANCE METRICS:", "\n")
+cat("BART MODEL ACCURACY:", round(accuracy_bart,4), "\n")
+cat("BART MODEL PRECISION:", round(precision_bart,4), "\n")
+cat("BART MODEL SENSITIVITY:", round(sensitivity_bart,4), "\n")
+cat("BART MODEL SPECIFICITY:", round(specificity_bart,4), "\n")
+
+# Confusion matrix and performance metrics of BART model slightly changes at each run and also when knitting the document although cross validation is performed. The evaluation is done based on the following performance metrics of the BART model.
+# Accuracy: 0.8948	Precision: 0.9012	Sensitivity: 0.8572	Specificity: 0.9248
+```
+
+
+```{r}
+#----------------------------------------- 7. Support Vector Machine (SVM) --------------------------------------
+```
+
+```{r, message=FALSE}
+library(e1071)      # Support Vector Machines
+library(pdp)        # Partial Dependence w/ SVM
+library(ggplot2)
+```
+
+```{r}
+# I performed 5-fold cross validation for SVM model to classify the clastics and carbonates facies.
+
+# The procedure of cross validation starts with dividing the dataset into k parts. In this case, k is equal to 5. Each part has N/k observations where N is the total number of observations. The model is fit iteratively from 1 to k with the training data. 
+# Then, I created the confusion matrices for test set of each fold. Then, I aggregated the confusion matrices to produce the final confusion matrix of the model. 
+# Finally, I calculated the performance metrics (accuracy, precision, sensitivity, and specificity) of the SVM model based on true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN) of the final confusion matrix.
+```
+
+```{r}
+# Defines k_fold_cross_validation function that takes two arguments kfold_folds and data.
+k_fold_cross_validation <- function(kfold_folds, data) { 
+  
+  # Split data into k folds
+  folds <- cut(1:nrow(data), breaks = kfold_folds, labels = FALSE)
+  
+  confusion_matrices <- list()  # Create a list to store confusion matrices
+  
+  # Loop over each fold
+  for (i in 1:kfold_folds) {
+    
+    test_set_svm <- data[folds == i, ] # test set
+    training_set_svm <- data[folds != i, ] # training set
+    
+    # Train the SVM model using the training set
+    svm_model <- svm(f_clastic_carb ~ depth + gr + ild_log10 + deltaphi + phind + pe, data = training_set_svm)
+    
+    # Predict using the predictors in the test set
+    predicted_data <- predict(svm_model, newdata = test_set_svm, type = "class")
+    
+    # Create the confusion matrix
+    confusion_matrix <- table(Actual = test_set_svm$f_clastic_carb, Predicted = predicted_data)
+    
+    # Store the confusion matrix in the list
+    confusion_matrices[[i]] <- confusion_matrix
+  }
+  
+  return(confusion_matrices)
+}
+```
+
+```{r}
+# Perform k-fold cross-validation
+k <- 5  # Number of folds
+data_cross_val <- facies_class[c('depth', 'gr', 'ild_log10', 'deltaphi', 'phind', 'pe', 'f_clastic_carb')]
+
+results <- k_fold_cross_validation(k, data_cross_val)
+
+# Initialize an empty confusion matrix
+final_confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Aggregate confusion matrices
+for (i in 1:k) {
+  final_confusion_matrix <- final_confusion_matrix + as.matrix(results[[i]])
+}
+
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates")
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Convert the matrix to a data frame and rename columns
+confusion_df <- as.data.frame(final_confusion_matrix)
+colnames(confusion_df) <- c("Predicted", "Actual", "Frequency")
+
+# Create a ggplot with geom_tile
+ggplot(confusion_df, aes(x = Actual, y = Predicted, fill = Frequency)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Frequency)), vjust = 1) +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "SVM MODEL Final Confusion Matrix",
+       x = "Predicted",
+       y = "Actual") +
+  theme_minimal()
+```
+
+```{r}
+# to correct the order of categories in rows
+final_confusion_matrix <- final_confusion_matrix[c(2, 1),] 
+
+# Label the confusion matrix
+colnames(final_confusion_matrix) <- c("Clastics", "Carbonates") 
+rownames(final_confusion_matrix) <- c("Carbonates", "Clastics") # to correct the order of categories in rows
+
+# Calculate performance metrics
+TP <- final_confusion_matrix[2, 2]
+TN <- final_confusion_matrix[1, 1]
+FP <- final_confusion_matrix[2, 1]
+FN <- final_confusion_matrix[1, 2]
+
+accuracy_svm <- (TP + TN) / sum(final_confusion_matrix)
+precision_svm <- TP/(FP+TP)
+sensitivity_svm <- TP/(TP + FN)
+specificity_svm <- (1- FP/(FP+TN))
+
+cat("\n")
+cat("SVM MODEL PERFORMANCE METRICS:", "\n")
+cat("SVM MODEL ACCURACY:", round(accuracy_svm,4), "\n")
+cat("SVM MODEL PRECISION:", round(precision_svm,4), "\n")
+cat("SVM MODEL SENSITIVITY:", round(sensitivity_svm,4), "\n")
+cat("SVM MODEL SPECIFICITY:", round(specificity_svm,4), "\n")
+```
+```{r}
+# Bar chart of accuracy
+
+# Creating a data frame for the accuracy values
+accuracy_data <- data.frame(
+  Model = rep(c("GAM", "MARS", "CART", "Bagging", "Random Forest", "BART", "SVM"), each = 1),
+  Accuracy = rep(c("Accuracy"), times = 7),
+  Value = c(accuracy_gam,
+            accuracy_mars,
+            accuracy_cart,
+            accuracy_bagging,
+            accuracy_rf,
+            accuracy_bart,
+            accuracy_svm)
+)
+
+# Plotting the grouped bar chart using ggplot2
+p <- ggplot(accuracy_data, aes(x = Model, y = Value, fill = Model)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", Value)), vjust = -0.3, position = position_dodge(width = 0.7)) +
+  labs(title = "Model Accuracy Comparison",
+       x = "Model",
+       y = "Accuracy") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white"),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black"),
+    legend.position = "none"
+  )
+
+print(p)
+
+# Save the plot with a specified size
+ggsave("model_accuracy_comparison.png", plot = p, width = 10, height = 6)
+```
+
+```{r}
+# Bar chart of precision
+
+# Creating a data frame for the accuracy values
+precision_data <- data.frame(
+  Model = rep(c("GAM", "MARS", "CART", "Bagging", "Random Forest", "BART", "SVM"), each = 1),
+  Precision = rep(c("Precision"), times = 7),
+  Value = c(precision_gam,
+            precision_mars,
+            precision_cart,
+            precision_bagging,
+            precision_rf,
+            precision_bart,
+            precision_svm)
+)
+
+# Plotting the grouped bar chart using ggplot2
+p <- ggplot(precision_data, aes(x = Model, y = Value, fill = Model)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", Value)), vjust = -0.3, position = position_dodge(width = 0.7)) +
+  labs(title = "Model Precision Comparison",
+       x = "Model",
+       y = "Precision") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.background = element_rect(fill = "white"),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black"),
+    legend.position = "none"
+  )
+
+print(p)
+
+# Save the plot with a specified size
+ggsave("model_precision_comparison.png", plot = p, width = 10, height = 6)
+```
+
+```{r}
+# Bar chart of sensitivity
+
+# Creating a data frame for the accuracy values
+sensitivity_data <- data.frame(
+  Model = rep(c("GAM", "MARS", "CART", "Bagging", "Random Forest", "BART", "SVM"), each = 1),
+  Sensitivity = rep(c("Sensitivity"), times = 7),
+  Value = c(sensitivity_gam,
+            sensitivity_mars,
+            sensitivity_cart,
+            sensitivity_bagging,
+            sensitivity_rf,
+            sensitivity_bart,
+            sensitivity_svm)
+)
+
+# Plotting the grouped bar chart using ggplot2
+p <- ggplot(sensitivity_data, aes(x = Model, y = Value, fill = Model)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", Value)), vjust = -0.3, position = position_dodge(width = 0.7)) +
+  labs(title = "Model Sensitivity Comparison",
+       x = "Model",
+       y = "Sensitivity") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  
+    panel.background = element_rect(fill = "white"),  
+    axis.text = element_text(color = "black"),  
+    axis.title = element_text(color = "black"),
+    legend.position = "none"
+  )
+
+print(p)
+
+# Save the plot with a specified size
+ggsave("model_sensitivity_comparison.png", plot = p, width = 10, height = 6)
+```
+```{r}
+# Bar chart of specificity
+
+# Creating a data frame for the accuracy values
+specificity_data <- data.frame(
+  Model = rep(c("GAM", "MARS", "CART", "Bagging", "Random Forest", "BART", "SVM"), each = 1),
+  Specificity = rep(c("Specificity"), times = 7),
+  Value = c(specificity_gam,
+            specificity_mars,
+            specificity_cart,
+            specificity_bagging,
+            specificity_rf,
+            specificity_bart,
+            specificity_svm)
+)
+
+# Plotting the grouped bar chart using ggplot2
+p <- ggplot(specificity_data, aes(x = Model, y = Value, fill = Model)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", Value)), vjust = -0.3, position = position_dodge(width = 0.7)) +
+  labs(title = "Model Specificity Comparison",
+       x = "Model",
+       y = "Specificity") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  
+    panel.background = element_rect(fill = "white"),  
+    axis.text = element_text(color = "black"),  
+    axis.title = element_text(color = "black"),
+    legend.position = "none"
+  )
+
+print(p)
+
+# Save the plot with a specified size
+ggsave("model_specificity_comparison.png", plot = p, width = 10, height = 6)
+```
+```{r}
+# Bar chart of f1score
+
+# Creating a data frame for the accuracy values
+f1score_data <- data.frame(
+  Model = rep(c("GAM", "MARS", "CART", "Bagging", "Random Forest", "BART", "SVM"), each = 1),
+  F1score = rep(c("F1score"), times = 7),
+  Value = c(2*precision_gam*sensitivity_gam/(precision_gam+sensitivity_gam),
+            2*precision_mars*sensitivity_mars/(precision_mars+sensitivity_mars),
+            2*precision_cart*sensitivity_cart/(precision_cart+sensitivity_cart),
+            2*precision_bagging*sensitivity_bagging/(precision_bagging+sensitivity_bagging),
+            2*precision_rf*sensitivity_rf/(precision_rf+sensitivity_rf),
+            2*precision_bart*sensitivity_bart/(precision_bart+sensitivity_bart),
+            2*precision_svm*sensitivity_svm/(precision_svm+sensitivity_svm))
+)
+
+# Plotting the grouped bar chart using ggplot2
+p <- ggplot(f1score_data, aes(x = Model, y = Value, fill = Model)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  geom_text(aes(label = sprintf("%.2f", Value)), vjust = -0.3, position = position_dodge(width = 0.7)) +
+  labs(title = "Model F1score Comparison",
+       x = "Model",
+       y = "F1score") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  
+    panel.background = element_rect(fill = "white"),  
+    axis.text = element_text(color = "black"),  
+    axis.title = element_text(color = "black"),
+    legend.position = "none"
+  )
+
+print(p)
+
+# Save the plot with a specified size
+ggsave("model_f1score_comparison.png", plot = p, width = 10, height = 6)
+```
