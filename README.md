@@ -13,7 +13,7 @@ L.T. Ozgur Yildirim
 <a id='section1'></a>
 ### Purpose of the study
 
-The ultimate goal of this  project is to improve the recommendations of artists. The jupyter notebook and pyton are used. The song recommendation system is also created using streamlit.
+The ultimate goal of this  project is to classify facies penetrated by oil and gas wells in the Panoma Gas Field in the southwest Kansas, USA. R programming language is used to implement seven supervised machine learning classifiers.
 
 <a id='section2'></a>
 ### Files
@@ -35,4 +35,4 @@ The song recommendation application is created using streamlit and python.
 
 <a id='section3'></a>
 ### License
-This is an educational project; therefore, all materials are free to be used.
+This project is my final project for EME 597-004 Data Analytics for Earth and Energy Systems course given in Energy and Mineral Engineering Department of the Penn State University. This is an educational project; therefore, all materials are free to be used.
